@@ -1,16 +1,23 @@
 # starto
 
-Work on multiple branches at the same time. No stashing. No conflicts. No leaked state.
+Run multiple branches of the same codebase simultaneously — each with its own dev server, database, and config. Like lightweight containers, but without Docker.
 
-Starto manages the full local dev environment lifecycle — code, database, config, and processes — so you can run parallel branches without interference.
+```
+~/my-app/                    ← main branch, running on :3000
+~/fix-auth-bug/              ← hotfix branch, running on :3001, own database
+~/new-dashboard/             ← feature branch, running on :3002, own database
+```
+
+Three branches. Three running servers. Three isolated databases. One codebase. Zero conflicts.
 
 ## The problem
 
-You're mid-feature on branch A. A bug report comes in — you need branch B. Your options:
+You're mid-feature on branch A, dev server running. A bug report comes in — you need branch B running too. Your options are all bad:
 
-- `git stash` — risky, easy to forget, stash conflicts
-- Commit half-done work — pollutes history
-- Manual second clone — 15 minutes of setup
+- `git stash` and switch — kills your running server, risky stash conflicts
+- Commit half-done work — pollutes history, may not even build
+- Clone the repo again — 15 minutes of npm install, env setup, port juggling
+- Docker Compose — heavy, slow startup, complex config for local dev
 - Raw `git worktree` — handles code, but not your database, ports, or env files
 
 ## The solution
@@ -19,7 +26,9 @@ You're mid-feature on branch A. A bug report comes in — you need branch B. You
 starto new fix-auth-bug
 ```
 
-One command. Creates a git worktree, a local database, copies your env config, installs dependencies, and assigns a port. Everything isolated. Everything reversible.
+One command. Creates a git worktree, a local database, copies your env config, installs dependencies, and assigns a free port. Your original branch keeps running untouched. Both branches serve simultaneously on different ports.
+
+Think of it as `docker-compose` for local branch development — but instant, no containers, no YAML, and it uses your actual local tools (Node, Postgres, etc.).
 
 ## Install
 
