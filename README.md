@@ -1,6 +1,6 @@
 # starto
 
-Run multiple branches of the same codebase simultaneously — each with its own dev server, database, and config. Like lightweight containers, but without Docker.
+One codebase. Work on multiple branches at the same time. No stashing. No conflicts. No leaked state.
 
 ```
 ~/my-app/                    ← main branch, running on :3000

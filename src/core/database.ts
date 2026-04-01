@@ -1,5 +1,7 @@
 import { execSync } from 'node:child_process';
 
+// @business-critical: database naming determines isolation — wrong name = data corruption or orphaned DBs
+// MUST have unit tests before deployment
 /**
  * Sanitize a name for use as a Postgres database name.
  * Replaces hyphens with underscores, lowercases, strips non-alphanumeric.
@@ -8,6 +10,8 @@ export function sanitizeDbName(name: string): string {
   return name.toLowerCase().replace(/-/g, '_').replace(/[^a-z0-9_]/g, '');
 }
 
+// @business-critical: deterministic naming — same input must always produce same output
+// MUST have unit tests before deployment
 /**
  * Generate a deterministic database name from project + branch.
  * e.g. controlla-app + W208-client-portal-cms → controlla_app_w208_client_portal_cms

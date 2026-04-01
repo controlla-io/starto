@@ -25,6 +25,8 @@ export function findTomlPath(from: string = process.cwd()): string | null {
   }
 }
 
+// @business-critical: config parsing drives all operations — wrong parse = wrong ports, paths, commands
+// MUST have unit tests before deployment
 /**
  * Load and parse starto.toml
  */

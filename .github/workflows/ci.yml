@@ -19,5 +19,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
       - run: npm ci
       - run: npm run build
+      - run: npm test
       - run: node dist/cli.js --version
       - run: node dist/cli.js --help
