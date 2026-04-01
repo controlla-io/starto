@@ -110,10 +110,12 @@ export async function commandNew(args: string[]): Promise<void> {
 
   // Step 4: Assign port
   const portRange = toml.ports?.range || [project.port + 1, project.port + 99];
-  // Collect already-used ports
+  // Collect ALL used ports: every project's main port + every environment's port
   const allExistingMeta = listAllMetadata();
   const usedPorts = new Set(allExistingMeta.map((m) => m.port));
-  usedPorts.add(project.port); // Reserve main project port
+  for (const p of Object.values(projects)) {
+    usedPorts.add(p.port);
+  }
 
   const assignedPort = await findAvailablePort(portRange[0], portRange[1], usedPorts);
   if (!assignedPort) {
@@ -121,10 +123,19 @@ export async function commandNew(args: string[]): Promise<void> {
   }
   const envPort = assignedPort || project.port + 1;
 
-  // Step 5: Env file
+  // Step 5: Env file — only apply DB overrides if we actually created a database
   info('Setting up environment...');
-  const envVars: Record<string, string> = { db: dbName || '', port: String(envPort) };
-  const envResult = setupEnvFile(project.path, worktreePath, project.envOverrides, envVars);
+  const envVars: Record<string, string> = { port: String(envPort) };
+  const activeOverrides = { ...project.envOverrides };
+  if (dbName) {
+    envVars.db = dbName;
+  } else {
+    // Remove any overrides that reference ${db} — they'd resolve to empty
+    for (const [key, val] of Object.entries(activeOverrides)) {
+      if (val.includes('${db}')) delete activeOverrides[key];
+    }
+  }
+  const envResult = setupEnvFile(project.path, worktreePath, activeOverrides, envVars);
   if (envResult.copied) {
     success('.env.local copied from main project.');
   }
