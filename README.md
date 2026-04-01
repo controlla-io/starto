@@ -1,25 +1,54 @@
 # starto
 
-Work on multiple branches at the same time. No stashing. No conflicts. No leaked state.
-
-Starto manages the full local dev environment lifecycle — code, database, config, and processes — so you can run parallel branches without interference.
-
-## The problem
-
-You're mid-feature on branch A. A bug report comes in — you need branch B. Your options:
-
-- `git stash` — risky, easy to forget, stash conflicts
-- Commit half-done work — pollutes history
-- Manual second clone — 15 minutes of setup
-- Raw `git worktree` — handles code, but not your database, ports, or env files
-
-## The solution
+Run multiple branches of your project at the same time — each with its own server, database, and port.
 
 ```bash
-starto new fix-auth-bug
+$ starto new fix-auth
+  ✓ Worktree created
+  ✓ Database created: my_app_fix_auth
+  ✓ Port assigned: 3001
+  ✓ Ready: ~/fix-auth on :3001
+
+$ starto new redesign
+  ✓ Worktree created
+  ✓ Database created: my_app_redesign
+  ✓ Port assigned: 3002
+  ✓ Ready: ~/redesign on :3002
+
+$ starto list
+  PROJECT    PORT   STATUS
+  my-app     3000   running     ← your main branch, untouched
+    fix-auth    3001   running     ← isolated hotfix
+    redesign    3002   stopped     ← isolated feature
 ```
 
-One command. Creates a git worktree, a local database, copies your env config, installs dependencies, and assigns a port. Everything isolated. Everything reversible.
+One codebase. Concurrent branches. Isolated databases. Managed ports. No conflicts.
+
+## What it does
+
+Starto manages the full lifecycle of parallel development environments:
+
+- **Concurrent branches** — multiple branches of the same project checked out and running simultaneously, via git worktrees
+- **Instant databases** — each branch gets its own local Postgres database, created and migrated automatically
+- **Intelligent ports** — automatic assignment from a configurable range, no conflicts, persistent across restarts
+- **Environment isolation** — each branch gets its own `.env.local` with the correct database URL and port
+- **Complete cleanup** — one command tears down everything: server, database, worktree, config. Nothing leaked.
+
+Think of it as Docker-level isolation for local development — but instant, no containers, and using your actual tools (Node, Postgres, git).
+
+## The problem it solves
+
+You're mid-feature, dev server running. A bug report comes in. You need that fix running too — on a different branch, with its own database, at the same time.
+
+Your options today are all bad:
+
+- **`git stash` and switch** — kills your running server, risks stash conflicts
+- **Commit half-done work** — pollutes history, may not build
+- **Clone the repo again** — 15 minutes of npm install, env files, port juggling
+- **Docker Compose** — heavy, slow startup, complex YAML for local dev
+- **Raw `git worktree`** — handles code, but not your database, port, or env files
+
+Starto handles all of it. One command up, one command down.
 
 ## Install
 
@@ -88,10 +117,10 @@ post_new = "my-script.sh $STARTO_PROJECT $STARTO_BRANCH"
 
 ## How it works
 
-**`starto new feature-x`** does this:
+**`starto new feature-x`** creates a fully isolated environment:
 
 1. `git worktree add` — parallel checkout, no stashing
-2. `createdb` — isolated local database (if configured)
+2. `createdb` — isolated local database
 3. Copy `.env.local` from main project, override DB URL and port
 4. `npm install` — fresh dependencies
 5. Run your setup command (migrations, seed, etc.)
@@ -119,7 +148,7 @@ post_new = "my-script.sh $STARTO_PROJECT $STARTO_BRANCH"
 starto list --json
 ```
 
-Returns structured JSON with all projects, environments, ports, PIDs, and database names. Useful for integrating with other tools.
+Returns structured JSON with all projects, environments, ports, PIDs, and database names. Built for integration with other tools.
 
 ## Hook variables
 

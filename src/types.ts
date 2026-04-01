@@ -14,12 +14,14 @@ export interface ProjectEnvOverrides {
   [key: string]: string;
 }
 
+export type DatabaseType = 'postgresql' | 'mysql' | 'sqlite';
+
 export interface ProjectConfig {
   path?: string;
   port: number;
   framework?: Framework;
   start?: string;
-  database?: boolean;
+  database?: boolean | DatabaseType;
   setup?: string;
   env?: ProjectEnvOverrides;
 }
@@ -70,7 +72,7 @@ export interface ResolvedProject {
   port: number;
   framework: Framework | null;
   startCommand: string | null;
-  database: boolean;
+  database: DatabaseType | false;
   setup: string | null;
   envOverrides: ProjectEnvOverrides;
 }

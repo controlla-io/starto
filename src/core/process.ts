@@ -65,6 +65,8 @@ export function stopProcess(pid: number): boolean {
   }
 }
 
+// @business-critical: safety gate for starto rm — false negative = files deleted from under running process
+// MUST have unit tests before deployment
 /**
  * Check if any process has files open in a directory (safety check for rm)
  */

@@ -2,6 +2,8 @@ import { readFileSync, writeFileSync, existsSync, copyFileSync } from 'node:fs';
 import { join } from 'node:path';
 import type { ProjectEnvOverrides } from '../types.js';
 
+// @business-critical: env overrides connect the app to the correct database — wrong override = wrong DB
+// MUST have unit tests before deployment
 /**
  * Copy .env.local from source project to worktree, then apply overrides.
  * This preserves secrets/API keys while replacing DB URLs and ports.
