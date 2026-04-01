@@ -2,7 +2,7 @@ import { resolve } from 'node:path';
 import { execSync } from 'node:child_process';
 import { loadConfig } from '../core/config.js';
 import { branchExists, createWorktree } from '../core/worktree.js';
-import { generateDbName, createDatabase, isPostgresAvailable } from '../core/database.js';
+import { generateDbName, createDatabase, isDatabaseAvailable } from '../core/database.js';
 import { setupEnvFile } from '../core/env.js';
 import { findAvailablePort } from '../core/ports.js';
 import { saveMetadata, loadMetadata, listAllMetadata } from '../core/metadata.js';
@@ -87,15 +87,17 @@ export async function commandNew(args: string[]): Promise<void> {
   // Step 3: Database (if configured)
   let dbName: string | null = null;
   if (project.database) {
+    const dbType = project.database;
     const dbHost = personal.database?.host || 'localhost';
     const dbPort = personal.database?.port || 5432;
+    const dataDir = worktreePath; // SQLite files live in the worktree
 
-    if (!isPostgresAvailable(dbHost, dbPort)) {
-      warn(`Postgres not available at ${dbHost}:${dbPort}. Skipping database creation.`);
+    if (!isDatabaseAvailable(dbHost, dbPort, dbType, dataDir)) {
+      warn(`${dbType} not available. Skipping database creation.`);
     } else {
       dbName = generateDbName(slug, branch);
-      info(`Creating database ${c('cyan', dbName)}...`);
-      const db = createDatabase(dbName, dbHost, dbPort);
+      info(`Creating ${dbType} database ${c('cyan', dbName)}...`);
+      const db = createDatabase(dbName, dbHost, dbPort, dbType, dataDir);
       if (db.error) {
         warn(`Database: ${db.error}`);
       } else if (db.created) {

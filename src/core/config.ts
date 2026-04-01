@@ -1,8 +1,8 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { parse as parseTOML } from 'smol-toml';
-import type { StartoToml, PersonalConfig, ResolvedProject, Framework, ProjectConfig } from '../types.js';
-import { detectFramework, frameworkStartCommand } from './detect.js';
+import type { StartoToml, PersonalConfig, ResolvedProject, Framework, ProjectConfig, DatabaseType } from '../types.js';
+import { detectFramework, frameworkStartCommand, detectDatabaseType } from './detect.js';
 
 const STARTO_TOML = 'starto.toml';
 const PERSONAL_CONFIG_PATH = join(
@@ -63,13 +63,21 @@ export function resolveProject(
   const framework = config.framework || detectFramework(projectPath);
   const startCommand = config.start || frameworkStartCommand(framework, config.port);
 
+  // Resolve database: true → auto-detect type, string → explicit type, false/undefined → no db
+  let database: DatabaseType | false = false;
+  if (config.database === true) {
+    database = detectDatabaseType(projectPath) || 'postgresql';
+  } else if (typeof config.database === 'string') {
+    database = config.database;
+  }
+
   return {
     slug,
     path: projectPath,
     port: config.port,
     framework,
     startCommand,
-    database: config.database || false,
+    database,
     setup: config.setup || null,
     envOverrides: config.env || {},
   };

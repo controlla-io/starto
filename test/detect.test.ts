@@ -2,7 +2,7 @@ import { describe, it, beforeEach, afterEach } from 'node:test';
 import assert from 'node:assert/strict';
 import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
-import { detectFramework, detectPackageManager, frameworkStartCommand } from '../src/core/detect.js';
+import { detectFramework, detectPackageManager, detectDatabaseType, frameworkStartCommand } from '../src/core/detect.js';
 
 const TMP = join(import.meta.dirname, '.tmp-detect-test');
 
@@ -94,5 +94,72 @@ describe('frameworkStartCommand', () => {
 
   it('returns null for custom framework', () => {
     assert.equal(frameworkStartCommand('custom', 3000), null);
+  });
+});
+
+describe('detectDatabaseType', () => {
+  beforeEach(() => {
+    mkdirSync(TMP, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(TMP, { recursive: true, force: true });
+  });
+
+  it('detects postgresql from Prisma schema', () => {
+    mkdirSync(join(TMP, 'prisma'), { recursive: true });
+    writeFileSync(join(TMP, 'prisma', 'schema.prisma'), `
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+`);
+    assert.equal(detectDatabaseType(TMP), 'postgresql');
+  });
+
+  it('detects mysql from Prisma schema', () => {
+    mkdirSync(join(TMP, 'prisma'), { recursive: true });
+    writeFileSync(join(TMP, 'prisma', 'schema.prisma'), `
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+`);
+    assert.equal(detectDatabaseType(TMP), 'mysql');
+  });
+
+  it('detects sqlite from Prisma schema', () => {
+    mkdirSync(join(TMP, 'prisma'), { recursive: true });
+    writeFileSync(join(TMP, 'prisma', 'schema.prisma'), `
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+`);
+    assert.equal(detectDatabaseType(TMP), 'sqlite');
+  });
+
+  it('detects postgresql from pg dependency', () => {
+    writeFileSync(join(TMP, 'package.json'), JSON.stringify({ dependencies: { pg: '8.0.0' } }));
+    assert.equal(detectDatabaseType(TMP), 'postgresql');
+  });
+
+  it('detects mysql from mysql2 dependency', () => {
+    writeFileSync(join(TMP, 'package.json'), JSON.stringify({ dependencies: { mysql2: '3.0.0' } }));
+    assert.equal(detectDatabaseType(TMP), 'mysql');
+  });
+
+  it('detects sqlite from better-sqlite3 dependency', () => {
+    writeFileSync(join(TMP, 'package.json'), JSON.stringify({ dependencies: { 'better-sqlite3': '9.0.0' } }));
+    assert.equal(detectDatabaseType(TMP), 'sqlite');
+  });
+
+  it('returns null when no database detected', () => {
+    writeFileSync(join(TMP, 'package.json'), JSON.stringify({ dependencies: { express: '4.0.0' } }));
+    assert.equal(detectDatabaseType(TMP), null);
+  });
+
+  it('returns null for empty directory', () => {
+    assert.equal(detectDatabaseType(TMP), null);
   });
 });
