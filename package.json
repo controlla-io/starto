@@ -1,7 +1,7 @@
 {
-  "name": "@controlla/starto",
+  "name": "@controlla-io/starto",
   "version": "0.1.0",
-  "description": "Local dev environment multiplexing — work on multiple branches simultaneously",
+  "description": "Develop and run multiple branches simultaneously — lightweight, isolated servers, databases, and ports",
   "type": "module",
   "bin": {
     "starto": "./dist/cli.js"
@@ -35,7 +35,7 @@
   "homepage": "https://github.com/controlla-io/starto",
   "author": "Controlla <hello@controlla.io>",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "smol-toml": "^1.3.1"
