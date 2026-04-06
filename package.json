@@ -4,7 +4,7 @@
   "description": "Develop and run multiple branches simultaneously — lightweight, isolated servers, databases, and ports",
   "type": "module",
   "bin": {
-    "starto": "./dist/cli.js"
+    "starto": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
@@ -30,7 +30,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/controlla-io/starto.git"
+    "url": "git+https://github.com/controlla-io/starto.git"
   },
   "homepage": "https://github.com/controlla-io/starto",
   "author": "Controlla <hello@controlla.io>",

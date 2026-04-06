@@ -8,8 +8,12 @@ import { commandRm } from './commands/rm.js';
 import { commandStop } from './commands/stop.js';
 import { commandGc } from './commands/gc.js';
 import { c } from './core/output.js';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const VERSION = '0.1.2';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const VERSION = JSON.parse(readFileSync(join(__dirname, '..', 'package.json'), 'utf8')).version;
 const args = process.argv.slice(2);
 const command = args[0];
 const commandArgs = args.slice(1);
