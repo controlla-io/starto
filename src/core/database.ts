@@ -53,7 +53,7 @@ const postgres: DatabaseProvider = {
   exists(dbName, { host, port }) {
     try {
       const output = execSync(
-        `psql -h ${host} -p ${port} -tAc "SELECT 1 FROM pg_database WHERE datname='${dbName}'"`,
+        `psql -h ${host} -p ${port} -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='${dbName}'"`,
         { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }
       );
       return output.trim() === '1';
@@ -92,7 +92,7 @@ const postgres: DatabaseProvider = {
 
   available({ host, port }) {
     try {
-      execSync(`psql -h ${host} -p ${port} -tAc "SELECT 1"`, {
+      execSync(`psql -h ${host} -p ${port} -d postgres -tAc "SELECT 1"`, {
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'ignore'],
       });
@@ -105,7 +105,7 @@ const postgres: DatabaseProvider = {
   list(prefix, { host, port }) {
     try {
       const output = execSync(
-        `psql -h ${host} -p ${port} -tAc "SELECT datname FROM pg_database WHERE datname LIKE '${prefix}%'"`,
+        `psql -h ${host} -p ${port} -d postgres -tAc "SELECT datname FROM pg_database WHERE datname LIKE '${prefix}%'"`,
         { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] }
       );
       return output.trim().split('\n').filter((d) => d.length > 0);
