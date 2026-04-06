@@ -24,7 +24,8 @@ jobs:
       - run: node dist/cli.js --help
 
   # Summary job — matches org ruleset required check name
-  Test & Quality Checks:
+  check:
+    name: "Test & Quality Checks"
     needs: build
     if: always()
     runs-on: ubuntu-latest
