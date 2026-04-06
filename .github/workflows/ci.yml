@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18, 20, 22]
+        node-version: [20, 22]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -22,3 +22,16 @@ jobs:
       - run: npm test
       - run: node dist/cli.js --version
       - run: node dist/cli.js --help
+
+  # Summary job — matches org ruleset required check name
+  check:
+    name: "Test & Quality Checks"
+    needs: build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          if [ "${{ needs.build.result }}" != "success" ]; then
+            echo "Build failed"
+            exit 1
+          fi

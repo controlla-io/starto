@@ -1,10 +1,10 @@
 {
-  "name": "@controlla/starto",
-  "version": "0.1.0",
-  "description": "Local dev environment multiplexing — work on multiple branches simultaneously",
+  "name": "@controlla-io/starto",
+  "version": "0.1.2",
+  "description": "Develop and run multiple branches simultaneously — lightweight, isolated servers, databases, and ports",
   "type": "module",
   "bin": {
-    "starto": "./dist/cli.js"
+    "starto": "dist/cli.js"
   },
   "scripts": {
     "build": "tsc",
@@ -30,12 +30,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/controlla-io/starto.git"
+    "url": "git+https://github.com/controlla-io/starto.git"
   },
   "homepage": "https://github.com/controlla-io/starto",
   "author": "Controlla <hello@controlla.io>",
   "engines": {
-    "node": ">=18"
+    "node": ">=20"
   },
   "dependencies": {
     "smol-toml": "^1.3.1"
