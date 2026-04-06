@@ -9,7 +9,7 @@ import { commandStop } from './commands/stop.js';
 import { commandGc } from './commands/gc.js';
 import { c } from './core/output.js';
 
-const VERSION = '0.1.0';
+const VERSION = '0.1.2';
 const args = process.argv.slice(2);
 const command = args[0];
 const commandArgs = args.slice(1);

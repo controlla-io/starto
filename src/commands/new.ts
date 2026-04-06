@@ -1,9 +1,9 @@
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
 import { execSync } from 'node:child_process';
 import { loadConfig } from '../core/config.js';
 import { branchExists, createWorktree } from '../core/worktree.js';
 import { generateDbName, createDatabase, isDatabaseAvailable } from '../core/database.js';
-import { setupEnvFile } from '../core/env.js';
+import { setupEnvFile, loadEnvFile } from '../core/env.js';
 import { findAvailablePort } from '../core/ports.js';
 import { saveMetadata, loadMetadata, listAllMetadata } from '../core/metadata.js';
 import { detectPackageManager } from '../core/detect.js';
@@ -125,7 +125,10 @@ export async function commandNew(args: string[]): Promise<void> {
 
   // Step 5: Env file — only apply DB overrides if we actually created a database
   info('Setting up environment...');
-  const envVars: Record<string, string> = { port: String(envPort) };
+  const envVars: Record<string, string> = {
+    port: String(envPort),
+    user: process.env.USER || process.env.USERNAME || 'postgres',
+  };
   const activeOverrides = { ...project.envOverrides };
   if (dbName) {
     envVars.db = dbName;
@@ -172,7 +175,13 @@ export async function commandNew(args: string[]): Promise<void> {
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
         timeout: 120000,
-        env: { ...process.env, STARTO_DB: dbName || '', DATABASE_URL: dbName ? `postgresql://localhost:5432/${dbName}` : '' },
+        env: {
+          ...process.env,
+          STARTO_DB: dbName || '',
+          // Read DATABASE_URL and DIRECT_URL from the .env.local we just wrote
+          // rather than constructing URLs (which miss username, socket path, etc.)
+          ...loadEnvFile(join(worktreePath, '.env.local')),
+        },
       });
       success('Setup complete.');
     } catch (err: any) {
