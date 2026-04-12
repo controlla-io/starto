@@ -1,4 +1,5 @@
-import { resolve, join } from 'node:path';
+import { resolve, join, dirname } from 'node:path';
+import { existsSync as fileExists, readFileSync, appendFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { loadConfig } from '../core/config.js';
 import { branchExists, createWorktree } from '../core/worktree.js';
@@ -64,8 +65,8 @@ export async function commandNew(args: string[]): Promise<void> {
   // Run pre_new hook
   runHook(personal.hooks, 'pre_new', buildHookContext({ project: slug, branch }));
 
-  // Resolve worktree directory
-  const dirPattern = personal.worktree?.dir_pattern || '${branch}';
+  // Resolve worktree directory — default: project/_starto/branch
+  const dirPattern = personal.worktree?.dir_pattern || '${project}/_starto/${branch}';
   const dirName = dirPattern.replace('${branch}', branch).replace('${project}', slug);
   const worktreePath = resolve(workspaceRoot, dirName);
 
@@ -83,6 +84,16 @@ export async function commandNew(args: string[]): Promise<void> {
     process.exit(1);
   }
   success('Worktree created.');
+
+  // Ensure _starto/ is in the project's .gitignore
+  const gitignorePath = join(project.path, '.gitignore');
+  if (fileExists(gitignorePath)) {
+    const content = readFileSync(gitignorePath, 'utf8');
+    if (!content.includes('_starto')) {
+      appendFileSync(gitignorePath, '\n# Starto parallel environments\n_starto/\n');
+      success('Added _starto/ to .gitignore');
+    }
+  }
 
   // Step 3: Database (if configured)
   let dbName: string | null = null;
