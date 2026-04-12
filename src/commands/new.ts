@@ -65,8 +65,8 @@ export async function commandNew(args: string[]): Promise<void> {
   // Run pre_new hook
   runHook(personal.hooks, 'pre_new', buildHookContext({ project: slug, branch }));
 
-  // Resolve worktree directory — default: project/_starto/branch
-  const dirPattern = personal.worktree?.dir_pattern || '${project}/_starto/${branch}';
+  // Resolve worktree directory — default: project/.starto/branch
+  const dirPattern = personal.worktree?.dir_pattern || '${project}/.starto/${branch}';
   const dirName = dirPattern.replace('${branch}', branch).replace('${project}', slug);
   const worktreePath = resolve(workspaceRoot, dirName);
 
@@ -85,13 +85,13 @@ export async function commandNew(args: string[]): Promise<void> {
   }
   success('Worktree created.');
 
-  // Ensure _starto/ is in the project's .gitignore
+  // Ensure .starto/ is in the project's .gitignore
   const gitignorePath = join(project.path, '.gitignore');
   if (fileExists(gitignorePath)) {
     const content = readFileSync(gitignorePath, 'utf8');
-    if (!content.includes('_starto')) {
-      appendFileSync(gitignorePath, '\n# Starto parallel environments\n_starto/\n');
-      success('Added _starto/ to .gitignore');
+    if (!content.includes('.starto')) {
+      appendFileSync(gitignorePath, '\n# Starto parallel environments\n.starto/\n');
+      success('Added .starto/ to .gitignore');
     }
   }
 
