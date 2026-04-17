@@ -12,14 +12,14 @@ import { runHook, buildHookContext } from '../core/hooks.js';
 import { header, success, warn, error, info, c } from '../core/output.js';
 import type { EnvironmentMetadata } from '../types.js';
 
-export async function commandNew(args: string[]): Promise<void> {
+export async function commandEnv(args: string[]): Promise<void> {
   const createBranch = args.includes('--create');
   const noInstall = args.includes('--no-install');
   const noSetup = args.includes('--no-setup');
   const positional = args.filter((a) => !a.startsWith('-'));
 
   if (positional.length < 1) {
-    error('Usage: starto new <branch> [--project <slug>] [--create] [--no-install] [--no-setup]');
+    error('Usage: starto env <branch> [--project <slug>] [--create] [--no-install] [--no-setup]');
     process.exit(1);
   }
 
@@ -60,10 +60,10 @@ export async function commandNew(args: string[]): Promise<void> {
     process.exit(0);
   }
 
-  header(`starto new — ${slug} → ${branch}`);
+  header(`starto env — ${slug} → ${branch}`);
 
-  // Run pre_new hook
-  runHook(personal.hooks, 'pre_new', buildHookContext({ project: slug, branch }));
+  // Run pre_env hook
+  runHook(personal.hooks, 'pre_env', buildHookContext({ project: slug, branch }));
 
   // Resolve worktree directory — default: project/.starto/branch
   const dirPattern = personal.worktree?.dir_pattern || '${project}/.starto/${branch}';
@@ -141,6 +141,10 @@ export async function commandNew(args: string[]): Promise<void> {
     user: process.env.USER || process.env.USERNAME || 'postgres',
   };
   const activeOverrides = { ...project.envOverrides };
+  // Write CONTROLLA_WB if branch matches W<number> pattern
+  if (/^W\d+$/.test(branch)) {
+    activeOverrides['CONTROLLA_WB'] = branch;
+  }
   if (dbName) {
     envVars.db = dbName;
   } else {
@@ -213,8 +217,8 @@ export async function commandNew(args: string[]): Promise<void> {
   };
   saveMetadata(meta);
 
-  // Run post_new hook
-  runHook(personal.hooks, 'post_new', buildHookContext({
+  // Run post_env hook
+  runHook(personal.hooks, 'post_env', buildHookContext({
     project: slug, port: envPort, dir: worktreePath, branch, db: dbName,
   }));
 

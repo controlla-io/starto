@@ -48,8 +48,8 @@ export interface WorktreeConfig {
 export interface HooksConfig {
   pre_start?: string;
   post_start?: string;
-  pre_new?: string;
-  post_new?: string;
+  pre_env?: string;
+  post_env?: string;
   pre_rm?: string;
   post_rm?: string;
 }

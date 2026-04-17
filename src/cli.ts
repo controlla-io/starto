@@ -3,7 +3,7 @@
 import { commandInit } from './commands/init.js';
 import { commandList } from './commands/list.js';
 import { commandStart } from './commands/start.js';
-import { commandNew } from './commands/new.js';
+import { commandEnv } from './commands/env.js';
 import { commandRm } from './commands/rm.js';
 import { commandStop } from './commands/stop.js';
 import { commandGc } from './commands/gc.js';
@@ -24,7 +24,7 @@ ${c('bold', 'starto')} ${c('dim', `v${VERSION}`)} — local dev environment mult
 
 ${c('bold', 'USAGE')}
   starto                    Start dev server for current project
-  starto new <branch>       Create parallel environment (worktree + db + env)
+  starto env <branch>       Create parallel environment (worktree + db + env)
   starto list [--json]      Show all projects and environments
   starto stop [name]        Stop a running dev server
   starto rm <branch>        Tear down environment completely
@@ -32,7 +32,7 @@ ${c('bold', 'USAGE')}
   starto init               Scan workspace, generate starto.toml
 
 ${c('bold', 'OPTIONS')}
-  starto new <branch>
+  starto env <branch>
     --project <slug>        Target project (auto-detected from cwd)
     --create                Create the git branch if it doesn't exist
     --no-install            Skip npm/pnpm/bun install
@@ -50,7 +50,7 @@ ${c('bold', 'OPTIONS')}
 
 ${c('bold', 'EXAMPLES')}
   starto                                  # Start current project
-  starto new W208-client-portal-cms       # Parallel environment
+  starto env W208-client-portal-cms       # Parallel environment
   starto list --json                      # Machine-readable state
   starto rm W208-client-portal-cms        # Full teardown
   starto gc --yes                         # Clean orphaned resources
@@ -66,8 +66,9 @@ async function main(): Promise<void> {
       case 'start':
         commandStart(command === 'start' ? commandArgs : args);
         break;
-      case 'new':
-        await commandNew(commandArgs);
+      case 'env':
+      case 'new': // alias for backwards compatibility
+        await commandEnv(commandArgs);
         break;
       case 'list':
       case 'ls':
