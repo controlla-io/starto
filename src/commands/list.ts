@@ -1,19 +1,16 @@
+import { existsSync } from 'node:fs';
 import { loadConfig } from '../core/config.js';
 import { listWorktrees } from '../core/worktree.js';
-import { listAllMetadata } from '../core/metadata.js';
+import { listAllMetadata, removeMetadata } from '../core/metadata.js';
 import { isPortInUseSync, getPortPid } from '../core/ports.js';
-import { isProcessRunning } from '../core/process.js';
-import { databaseExists } from '../core/database.js';
-import { header, info, c } from '../core/output.js';
-import type { ListOutput, ListOutputProject, ListOutputEnvironment, EnvironmentMetadata } from '../types.js';
+import { header, info, warn, c } from '../core/output.js';
+import type { ListOutput, ListOutputEnvironment } from '../types.js';
 
 export function commandList(args: string[]): void {
   const json = args.includes('--json');
 
-  const { projects, workspaceRoot, personal } = loadConfig();
+  const { projects, personal } = loadConfig();
   const allMeta = listAllMetadata();
-  const dbHost = personal.database?.host || 'localhost';
-  const dbPort = personal.database?.port || 5432;
 
   const output: ListOutput = { projects: {} };
 
@@ -21,11 +18,21 @@ export function commandList(args: string[]): void {
     const portInUse = isPortInUseSync(project.port);
     const pid = portInUse ? getPortPid(project.port) : null;
 
-    // Find environments for this project
-    const envMetas = allMeta.filter((m) => m.project === slug);
     const environments: Record<string, ListOutputEnvironment> = {};
 
+    // 1. Check metadata entries — verify each against reality
+    const envMetas = allMeta.filter((m) => m.project === slug);
     for (const meta of envMetas) {
+      const worktreeExists = existsSync(meta.path);
+
+      if (!worktreeExists) {
+        // Stale metadata — worktree was deleted outside starto
+        if (!json) {
+          warn(`${meta.branch}: metadata exists but worktree is gone (run starto gc to clean)`);
+        }
+        continue; // Don't show ghost environments
+      }
+
       const envPortInUse = isPortInUseSync(meta.port);
       const envPid = envPortInUse ? getPortPid(meta.port) : null;
 
@@ -37,6 +44,32 @@ export function commandList(args: string[]): void {
         running: envPortInUse,
         pid: envPid,
       };
+    }
+
+    // 2. Discover worktrees from git that have no metadata
+    const gitWorktrees = listWorktrees(project.path);
+    const knownBranches = new Set(envMetas.map((m) => m.branch));
+
+    for (const wt of gitWorktrees) {
+      // Skip the main worktree (the project directory itself)
+      if (wt.path === project.path) continue;
+      // Skip if we already have metadata for this branch
+      if (!wt.branch || knownBranches.has(wt.branch)) continue;
+
+      // Discovered worktree with no starto metadata
+      const envPortInUse = isPortInUseSync(0); // No known port
+      environments[wt.branch] = {
+        port: 0,
+        path: wt.path,
+        branch: wt.branch,
+        database: null,
+        running: false,
+        pid: null,
+      };
+
+      if (!json) {
+        warn(`${wt.branch}: git worktree exists but not managed by starto`);
+      }
     }
 
     output.projects[slug] = {
@@ -78,8 +111,10 @@ export function commandList(args: string[]): void {
         : c('dim', 'stopped');
       const dbStr = env.database ? c('dim', ` db:${env.database}`) : '';
       const envPidStr = env.pid ? c('dim', ` (${env.pid})`) : '';
+      const portStr = env.port > 0 ? String(env.port) : c('dim', '?');
+      const unmanaged = env.port === 0 ? c('dim', ' (unmanaged)') : '';
 
-      info(`  ${c('yellow', branch.padEnd(22))} ${String(env.port).padEnd(7)} ${envStatus.padEnd(19)}${envPidStr}${dbStr}`);
+      info(`  ${c('yellow', branch.padEnd(22))} ${portStr.padEnd(7)} ${envStatus.padEnd(19)}${envPidStr}${dbStr}${unmanaged}`);
     }
   }
 

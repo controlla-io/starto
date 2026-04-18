@@ -74,8 +74,9 @@ export function createWorktree(
   }
 
   try {
-    const flag = createBranch ? '-b' : '';
-    const cmd = `git worktree add ${flag ? flag + ' ' : ''}"${absPath}" "${branch}"`;
+    const cmd = createBranch
+      ? `git worktree add -b "${branch}" "${absPath}"`
+      : `git worktree add "${absPath}" "${branch}"`;
     execSync(cmd, {
       cwd: repoPath,
       encoding: 'utf8',

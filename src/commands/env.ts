@@ -1,9 +1,10 @@
-import { resolve } from 'node:path';
+import { resolve, join, dirname } from 'node:path';
+import { existsSync as fileExists, readFileSync, appendFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
 import { loadConfig } from '../core/config.js';
 import { branchExists, createWorktree } from '../core/worktree.js';
 import { generateDbName, createDatabase, isDatabaseAvailable } from '../core/database.js';
-import { setupEnvFile } from '../core/env.js';
+import { setupEnvFile, loadEnvFile } from '../core/env.js';
 import { findAvailablePort } from '../core/ports.js';
 import { saveMetadata, loadMetadata, listAllMetadata } from '../core/metadata.js';
 import { detectPackageManager } from '../core/detect.js';
@@ -11,14 +12,14 @@ import { runHook, buildHookContext } from '../core/hooks.js';
 import { header, success, warn, error, info, c } from '../core/output.js';
 import type { EnvironmentMetadata } from '../types.js';
 
-export async function commandNew(args: string[]): Promise<void> {
+export async function commandEnv(args: string[]): Promise<void> {
   const createBranch = args.includes('--create');
   const noInstall = args.includes('--no-install');
   const noSetup = args.includes('--no-setup');
   const positional = args.filter((a) => !a.startsWith('-'));
 
   if (positional.length < 1) {
-    error('Usage: starto new <branch> [--project <slug>] [--create] [--no-install] [--no-setup]');
+    error('Usage: starto env <branch> [--project <slug>] [--create] [--no-install] [--no-setup]');
     process.exit(1);
   }
 
@@ -59,13 +60,13 @@ export async function commandNew(args: string[]): Promise<void> {
     process.exit(0);
   }
 
-  header(`starto new — ${slug} → ${branch}`);
+  header(`starto env — ${slug} → ${branch}`);
 
-  // Run pre_new hook
-  runHook(personal.hooks, 'pre_new', buildHookContext({ project: slug, branch }));
+  // Run pre_env hook
+  runHook(personal.hooks, 'pre_env', buildHookContext({ project: slug, branch }));
 
-  // Resolve worktree directory
-  const dirPattern = personal.worktree?.dir_pattern || '${branch}';
+  // Resolve worktree directory — default: project/.starto/branch
+  const dirPattern = personal.worktree?.dir_pattern || '${project}/.starto/${branch}';
   const dirName = dirPattern.replace('${branch}', branch).replace('${project}', slug);
   const worktreePath = resolve(workspaceRoot, dirName);
 
@@ -83,6 +84,16 @@ export async function commandNew(args: string[]): Promise<void> {
     process.exit(1);
   }
   success('Worktree created.');
+
+  // Ensure .starto/ is in the project's .gitignore
+  const gitignorePath = join(project.path, '.gitignore');
+  if (fileExists(gitignorePath)) {
+    const content = readFileSync(gitignorePath, 'utf8');
+    if (!content.includes('.starto')) {
+      appendFileSync(gitignorePath, '\n# Starto parallel environments\n.starto/\n');
+      success('Added .starto/ to .gitignore');
+    }
+  }
 
   // Step 3: Database (if configured)
   let dbName: string | null = null;
@@ -125,8 +136,15 @@ export async function commandNew(args: string[]): Promise<void> {
 
   // Step 5: Env file — only apply DB overrides if we actually created a database
   info('Setting up environment...');
-  const envVars: Record<string, string> = { port: String(envPort) };
+  const envVars: Record<string, string> = {
+    port: String(envPort),
+    user: process.env.USER || process.env.USERNAME || 'postgres',
+  };
   const activeOverrides = { ...project.envOverrides };
+  // Write CONTROLLA_WB if branch matches W<number> pattern
+  if (/^W\d+$/.test(branch)) {
+    activeOverrides['CONTROLLA_WB'] = branch;
+  }
   if (dbName) {
     envVars.db = dbName;
   } else {
@@ -172,7 +190,13 @@ export async function commandNew(args: string[]): Promise<void> {
         encoding: 'utf8',
         stdio: ['pipe', 'pipe', 'pipe'],
         timeout: 120000,
-        env: { ...process.env, STARTO_DB: dbName || '', DATABASE_URL: dbName ? `postgresql://localhost:5432/${dbName}` : '' },
+        env: {
+          ...process.env,
+          STARTO_DB: dbName || '',
+          // Read DATABASE_URL and DIRECT_URL from the .env.local we just wrote
+          // rather than constructing URLs (which miss username, socket path, etc.)
+          ...loadEnvFile(join(worktreePath, '.env.local')),
+        },
       });
       success('Setup complete.');
     } catch (err: any) {
@@ -193,8 +217,8 @@ export async function commandNew(args: string[]): Promise<void> {
   };
   saveMetadata(meta);
 
-  // Run post_new hook
-  runHook(personal.hooks, 'post_new', buildHookContext({
+  // Run post_env hook
+  runHook(personal.hooks, 'post_env', buildHookContext({
     project: slug, port: envPort, dir: worktreePath, branch, db: dbName,
   }));
 
