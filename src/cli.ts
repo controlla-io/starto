@@ -67,7 +67,6 @@ async function main(): Promise<void> {
         commandStart(command === 'start' ? commandArgs : args);
         break;
       case 'env':
-      case 'new': // alias for backwards compatibility
         await commandEnv(commandArgs);
         break;
       case 'list':
